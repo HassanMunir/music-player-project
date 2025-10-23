@@ -29,7 +29,7 @@ const songs = [
   },
   {
     name: 'metric-1',
-    displayName: 'Front Row (Remix',
+    displayName: 'Front Row (Remix)',
     artist: 'Jacinto Design',
   },
 ];
@@ -42,7 +42,12 @@ function playSong() {
   isPlaying = true;
   playBtn.classList.replace('fa-play', 'fa-pause');
   playBtn.setAttribute('title', 'Pause');
-  music.play();
+  music.play().catch(error => {
+    console.error('Error playing audio:', error);
+    // Reset to play state if there's an error
+    pauseSong();
+    alert('Unable to play this song. Please try another one.');
+  });
 }
 
 // Pause song
@@ -58,10 +63,27 @@ playBtn.addEventListener('click', () => (isPlaying ? pauseSong() : playSong()));
 
 // Update DOM
 function loadSong(song) {
-  title.textContent = song.displayName;
-  artist.textContent = song.artist;
+  // Show loading state
+  title.textContent = 'Loading...';
+  artist.textContent = 'Please wait...';
+  title.classList.add('loading');
+  artist.classList.add('loading');
+  
+  // Reset progress when loading new song
+  progress.style.width = '0%';
+  currentTimeEl.textContent = '0:00';
+  
+  // Load song data
   music.src = `music/${song.name}.mp3`;
   image.src = `img/${song.name}.jpg`;
+  
+  // Update display when audio is ready
+  music.addEventListener('loadeddata', () => {
+    title.textContent = song.displayName;
+    artist.textContent = song.artist;
+    title.classList.remove('loading');
+    artist.classList.remove('loading');
+  }, { once: true });
 }
 
 // Current Song
@@ -125,6 +147,39 @@ function setProgressBar(e) {
   const { duration } = music;
   music.currentTime = (clickX / width) * duration;
 }
+
+// Audio Error Handling
+music.addEventListener('error', () => {
+  console.error('Audio loading error');
+  alert('Error loading audio file. Please check if the file exists.');
+  pauseSong();
+});
+
+music.addEventListener('loadstart', () => {
+  console.log('Started loading audio');
+});
+
+music.addEventListener('canplaythrough', () => {
+  console.log('Audio loaded successfully');
+});
+
+// Keyboard Support
+document.addEventListener('keydown', (e) => {
+  switch(e.code) {
+    case 'Space':
+      e.preventDefault();
+      isPlaying ? pauseSong() : playSong();
+      break;
+    case 'ArrowLeft':
+      e.preventDefault();
+      prevSong();
+      break;
+    case 'ArrowRight':
+      e.preventDefault();
+      nextSong();
+      break;
+  }
+});
 
 // Event Listeners
 prevBtn.addEventListener('click', prevSong);
